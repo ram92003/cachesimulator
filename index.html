@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Cache Memory Simulator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1><i class="fas fa-microchip"></i> Interactive Cache Memory Simulator</h1>
+            <p class="subtitle">Visual Learning Tool for Computer Architecture</p>
+        </header>
+
+        <!-- Configuration Panel -->
+        <div class="panel config-panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-cog"></i> Cache Configuration</h2>
+            </div>
+            <div class="panel-content">
+                <div class="config-grid">
+                    <div class="config-group">
+                        <label for="cache-size">
+                            <i class="fas fa-database"></i> Cache Size (bytes)
+                            <span class="tooltip" data-tooltip="Total size of the cache memory in bytes">?</span>
+                        </label>
+                        <select id="cache-size" class="modern-select">
+                            <option value="16" selected>16</option>
+                            <option value="32">32</option>
+                            <option value="64">64</option>
+                            <option value="128">128</option>
+                        </select>
+                    </div>
+
+                    <div class="config-group">
+                        <label for="block-size">
+                            <i class="fas fa-cubes"></i> Block Size (bytes)
+                            <span class="tooltip" data-tooltip="Size of each cache block in bytes">?</span>
+                        </label>
+                        <select id="block-size" class="modern-select">
+                            <option value="4" selected>4</option>
+                            <option value="8">8</option>
+                            <option value="16">16</option>
+                        </select>
+                    </div>
+
+                    <div class="config-group">
+                        <label for="cache-type">
+                            <i class="fas fa-network-wired"></i> Cache Type
+                            <span class="tooltip" data-tooltip="Direct-Mapped: fixed mapping | Fully Associative: flexible placement with LRU">?</span>
+                        </label>
+                        <select id="cache-type" class="modern-select">
+                            <option value="direct-mapped" selected>Direct-Mapped</option>
+                            <option value="fully-associative">Fully Associative (LRU)</option>
+                        </select>
+                    </div>
+
+                    <div class="config-group">
+                        <label for="write-policy">
+                            <i class="fas fa-pen"></i> Write Policy
+                            <span class="tooltip" data-tooltip="Write-Through: update cache & memory | Write-Back: update cache only, defer memory writes">?</span>
+                        </label>
+                        <select id="write-policy" class="modern-select">
+                            <option value="write-back" selected>Write-Back</option>
+                            <option value="write-through">Write-Through</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button id="create-cache-btn" class="btn btn-primary">
+                    <i class="fas fa-play"></i> Create Cache
+                </button>
+            </div>
+        </div>
+
+        <!-- Operation Panel -->
+        <div class="panel operation-panel">
+            <div class="panel-header">
+                <h2><i class="fas fa-play-circle"></i> Memory Operations</h2>
+                <div class="sound-toggle">
+                    <input type="checkbox" id="sound-enabled" class="toggle-switch">
+                    <label for="sound-enabled">
+                        <i class="fas fa-volume-up"></i> Sound Effects
+                    </label>
+                </div>
+            </div>
+            <div class="panel-content">
+                <div class="operation-grid">
+                    <div class="config-group">
+                        <label for="memory-address">
+                            <i class="fas fa-map-marker-alt"></i> Memory Address
+                        </label>
+                        <input type="number" id="memory-address" class="modern-input" value="0" min="0" placeholder="Enter address">
+                    </div>
+
+                    <div class="config-group">
+                        <label for="operation-type">
+                            <i class="fas fa-tasks"></i> Operation
+                        </label>
+                        <select id="operation-type" class="modern-select">
+                            <option value="read" selected>Read</option>
+                            <option value="write">Write</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button id="execute-btn" class="btn btn-success" disabled>
+                        <i class="fas fa-bolt"></i> Execute Operation
+                    </button>
+                    <button id="reset-btn" class="btn btn-warning" disabled>
+                        <i class="fas fa-redo"></i> Reset Cache
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Indicator -->
+        <div id="progress-indicator" class="progress-indicator" style="display: none;">
+            <div class="progress-steps">
+                <div class="progress-step" data-step="0">
+                    <div class="step-icon"><i class="fas fa-search"></i></div>
+                    <div class="step-label">Fetch</div>
+                </div>
+                <div class="progress-arrow">→</div>
+                <div class="progress-step" data-step="1">
+                    <div class="step-icon"><i class="fas fa-balance-scale"></i></div>
+                    <div class="step-label">Compare Tag</div>
+                </div>
+                <div class="progress-arrow">→</div>
+                <div class="progress-step" data-step="2">
+                    <div class="step-icon"><i class="fas fa-crosshairs"></i></div>
+                    <div class="step-label">Hit/Miss</div>
+                </div>
+                <div class="progress-arrow">→</div>
+                <div class="progress-step" data-step="3">
+                    <div class="step-icon"><i class="fas fa-sync"></i></div>
+                    <div class="step-label">Update</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="content-grid">
+            <!-- Cache View Panel -->
+            <div class="panel cache-panel">
+                <div class="panel-header collapsible" data-target="cache-view">
+                    <h2><i class="fas fa-memory"></i> Cache State</h2>
+                    <i class="fas fa-chevron-down collapse-icon"></i>
+                </div>
+                <div id="cache-view" class="panel-content">
+                    <div id="cache-info" class="cache-info"></div>
+                    <div id="cache-table-container" class="cache-table-container">
+                        <p class="placeholder-text">
+                            <i class="fas fa-info-circle"></i> Create a cache to begin
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Panel -->
+            <div class="panel stats-panel">
+                <div class="panel-header collapsible" data-target="stats-view">
+                    <h2><i class="fas fa-chart-line"></i> Statistics</h2>
+                    <i class="fas fa-chevron-down collapse-icon"></i>
+                </div>
+                <div id="stats-view" class="panel-content">
+                    <div id="statistics-container" class="statistics-container">
+                        <div class="stat-card">
+                            <div class="stat-label">Total Accesses</div>
+                            <div class="stat-value" id="stat-total">0</div>
+                        </div>
+                        <div class="stat-card stat-hit">
+                            <div class="stat-label">Cache Hits</div>
+                            <div class="stat-value" id="stat-hits">0</div>
+                        </div>
+                        <div class="stat-card stat-miss">
+                            <div class="stat-label">Cache Misses</div>
+                            <div class="stat-value" id="stat-misses">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Hit Ratio</div>
+                            <div class="stat-value" id="stat-hit-ratio">0%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Memory Reads</div>
+                            <div class="stat-value" id="stat-mem-reads">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Memory Writes</div>
+                            <div class="stat-value" id="stat-mem-writes">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Log Panel -->
+        <div class="panel log-panel">
+            <div class="panel-header collapsible" data-target="log-view">
+                <h2><i class="fas fa-list"></i> Operation Log</h2>
+                <button id="clear-log-btn" class="btn btn-sm btn-secondary">
+                    <i class="fas fa-trash"></i> Clear
+                </button>
+                <i class="fas fa-chevron-down collapse-icon"></i>
+            </div>
+            <div id="log-view" class="panel-content">
+                <div id="log-container" class="log-container">
+                    <p class="placeholder-text">
+                        <i class="fas fa-info-circle"></i> Operation logs will appear here
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result Modal -->
+    <div id="result-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Operation Result</h3>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/simulator.js') }}"></script>
+</body>
+</html>
